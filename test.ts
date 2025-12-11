@@ -1,4 +1,4 @@
-import { createArray, Neuron, Value } from ".";
+import { createArray, Mlp, Neuron, Value } from ".";
 
 export function assert(condition: unknown, msg?: string): asserts condition {
   if (!condition) {
@@ -73,6 +73,22 @@ const testBackwardNeuron = function test_backward_neuron() {
   console.log(`${testBackwardNeuron.name} passed`);
 }
 
+function test_mlp() {
+  let dims = [3, 5, 1];
+  let mlp = new Mlp(dims);
+  let input = createArray(3);
+  let o = mlp.forward(input);
+  o[0].grad = 1;
+  o[0].backward();
+  
+  for(const v of mlp.get_parameters()) {
+      v.data = v.data + 0.01 * v.grad;
+  }
+  let o1 = mlp.forward(input);
+  assert(o1[0].data > o[0].data)
+}
+
 test_basic();
 test_backward();
 testBackwardNeuron();
+test_mlp();

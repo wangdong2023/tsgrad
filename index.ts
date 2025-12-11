@@ -111,3 +111,55 @@ export class Neuron {
         return out;
     }
 }
+
+export class Layer {
+    public params: Neuron[];
+
+    get_parameters(): Value[] {
+        let out = [] as Value[];
+        for (const p of this.params) {
+            out = out.concat(p.get_parameters());
+        }
+        return out;
+    }
+
+    constructor(public nin: number, public nout: number) {
+        this.params = [...Array(nout).keys()].map(i => new Neuron(nin));
+    }
+
+    forward(input: Value[]): Value[] {
+        return this.params.map(p => p.forward(input))
+            .concat();
+    }
+}
+
+export class Mlp {
+    public layers: Layer[];
+
+    get_parameters(): Value[] {
+        let out = [] as Value[];
+        for (const p of this.layers) {
+            out = out.concat(p.get_parameters());
+        }
+        return out;
+    }
+
+    constructor(public dims: number[]) {
+        if (dims.length < 2) {
+            throw new Error("dims too low");
+        }
+        this.layers = [new Layer(dims[0], dims[1])];
+
+        for(let i = 1; i < dims.length-1; ++i) {
+            this.layers.push(new Layer(dims[i], dims[i+1]));
+        }
+    }
+
+    forward(input: Value[]): Value[] {
+        let out = input;
+        for (const layer of this.layers) {
+            out = layer.forward(out);
+        }
+        return out;
+    }
+}
