@@ -33,8 +33,8 @@ export class Value { // Kapathy implements more, but I'm lazy, this should do
             other = new Value(other);
         }
 
-        let out = new Value(this.data + other.data, [this, other], '+', '_');
-        this._backward = () => {
+        let out = new Value(this.data + other.data, [this, other], '+', `(${this.label}+${other.label})`);
+        out._backward = () => {
             this.grad += out.grad;
             other.grad += out.grad;
         }
@@ -45,9 +45,8 @@ export class Value { // Kapathy implements more, but I'm lazy, this should do
         if (typeof other === 'number') {
             other = new Value(other);
         }
-        let out = new Value(this.data * other.data, [this, other], '*', '_');
-        this._backward = () => {
-            // console.log(out, this, other);
+        let out = new Value(this.data * other.data, [this, other], '*', `${this.label}*${other.label}`);
+        out._backward = () => {
             this.grad += out.grad * other.data;
             other.grad += out.grad * this.data;
         }
@@ -57,32 +56,58 @@ export class Value { // Kapathy implements more, but I'm lazy, this should do
 
     tanh(): Value {
         let ev = Math.pow(Math.E, 2 * this.data);
-        let out = new Value((ev - 1) / (ev + 1), [this], 'tanh', '_');
-        this._backward = () => {
+        let out = new Value((ev - 1) / (ev + 1), [this], 'tanh', `tanh(${this.label})`);
+        out._backward = () => {
             this.grad += out.grad * (1 - Math.pow(out.data, 2));
         }
         return out;
     }
 
     toString(precision: number=3): string {
-        return `${this.label}(${this.data.toPrecision(precision)}, ${this.grad.toPrecision(precision)})`
+        return `${this.label} {value:${this.data.toPrecision(precision)}, grad:${this.grad.toPrecision(precision)}}`
     }
 
     backward() {
         let params = topoSort(this, new Set([]));
         params.reverse();
         for (const param of params) {
+            // console.log("Before ", param.toString());
             param._backward();
+            // console.log("After ", param.toString());
         }
-
     }
-};
+}
+
+function random(): number {
+    return Math.random() * 2 - 1;
+}
+
+export function createArray(n: number, label: string='w'): Value[] {
+    return [...Array(n).keys()].map(
+        i => new Value(random(), [], '', `${label}${i}`))
+}
 
 
-let x = new Value(2);
-let o = x.tanh();
-o.grad = 1;
-x._backward()
-console.log(x.toString());
+export class Neuron {
+    public params: Value[];
+    public bias: Value;
 
+    constructor(public n: number) {
+        this.params = createArray(n);
+        this.bias = new Value(random(), [], '', 'bias');
+    }
 
+    get_parameters(): Value[] {
+        return [...this.params, this.bias];
+    }
+
+    forward(input: Value[]): Value { // a bit uglier
+        let sum = this.bias;
+        for (let i = 0; i < this.n; ++i) {
+            let temp = this.params[i].mul(input[i]);
+            sum = sum.add(temp);
+        }
+        let out = sum.tanh();
+        return out;
+    }
+}

@@ -1,4 +1,4 @@
-import { Value } from ".";
+import { createArray, Neuron, Value } from ".";
 
 export function assert(condition: unknown, msg?: string): asserts condition {
   if (!condition) {
@@ -50,8 +50,29 @@ function test_backward() {
     assert(xy.grad == 1);
     assert(x.grad == 3);
     assert(y.grad == 2);
-    console.log("test_basic passed!")
+    console.log("test_backward passed!")
+}
+
+const testBackwardNeuron = function test_backward_neuron() {
+  let x = createArray(3, 'x');
+
+  let nu = new Neuron(3);
+
+  let o = nu.forward(x);
+  let o1 = o.data
+  o.grad = 1;
+  o.backward();
+
+  for(const v of nu.get_parameters()) {
+      v.data = v.data + 0.01 * v.grad;
+  }
+
+  o = nu.forward(x);
+
+  assert(o.data - o1 > 0);
+  console.log(`${testBackwardNeuron.name} passed`);
 }
 
 test_basic();
 test_backward();
+testBackwardNeuron();
