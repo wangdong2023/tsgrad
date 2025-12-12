@@ -16,6 +16,14 @@ function topoSort(val: Value, seen: Set<Value>): Value[] {
     return out;
 }
 
+export function mseLoss(target: Value[], pred: Value[]): Value {
+    return Array(target.length).fill(0)
+        .map((v, i) => pred[i].minus(target[i]))
+        .map(v => v.mul(v))
+        .reduce((p, c, ci) => p.add(c))
+        .mul(1 / target.length);
+}
+
 
 export class Value { // Kapathy implements more, but I'm lazy, this should do
     public grad: number = 0;
@@ -24,7 +32,6 @@ export class Value { // Kapathy implements more, but I'm lazy, this should do
     constructor(
         public data: number,
         public prev: Value[] =[],
-        public ops: string = '',
         public label: string = '_') {
     }
 
@@ -33,7 +40,7 @@ export class Value { // Kapathy implements more, but I'm lazy, this should do
             other = new Value(other);
         }
 
-        let out = new Value(this.data + other.data, [this, other], '+', `(${this.label}+${other.label})`);
+        let out = new Value(this.data + other.data, [this, other], `(${this.label}+${other.label})`);
         out._backward = () => {
             this.grad += out.grad;
             other.grad += out.grad;
@@ -41,11 +48,24 @@ export class Value { // Kapathy implements more, but I'm lazy, this should do
         return out;
     }
 
+    minus(other: Value | number): Value { // different choice, we want toString to be prettier, instead a+ -b
+        if (typeof other === 'number') {
+            other = new Value(other);
+        }
+        let out = new Value(this.data - other.data, [this, other], `(${this.label}-${other.label})`);
+        out._backward = () => {
+            this.grad += out.grad;
+            other.grad -= out.grad;
+        }
+
+        return out;
+    }
+
     mul(other: Value | number): Value {
         if (typeof other === 'number') {
             other = new Value(other);
         }
-        let out = new Value(this.data * other.data, [this, other], '*', `${this.label}*${other.label}`);
+        let out = new Value(this.data * other.data, [this, other], `${this.label}*${other.label}`);
         out._backward = () => {
             this.grad += out.grad * other.data;
             other.grad += out.grad * this.data;
@@ -56,7 +76,7 @@ export class Value { // Kapathy implements more, but I'm lazy, this should do
 
     tanh(): Value {
         let ev = Math.pow(Math.E, 2 * this.data);
-        let out = new Value((ev - 1) / (ev + 1), [this], 'tanh', `tanh(${this.label})`);
+        let out = new Value((ev - 1) / (ev + 1), [this], `tanh(${this.label})`);
         out._backward = () => {
             this.grad += out.grad * (1 - Math.pow(out.data, 2));
         }
@@ -83,8 +103,13 @@ function random(): number {
 }
 
 export function createArray(n: number, label: string='w'): Value[] {
-    return [...Array(n).keys()].map(
-        i => new Value(random(), [], '', `${label}${i}`))
+    return Array(n).fill(0).map(
+        (_, i) => new Value(random(), [], `${label}${i}`));
+}
+
+export function valueArray(vals: number[], label: string='v'): Value[] {
+    return vals.map(
+        (v, i) => new Value(v, [], `${label}${i}`))
 }
 
 
@@ -94,7 +119,7 @@ export class Neuron {
 
     constructor(public n: number) {
         this.params = createArray(n);
-        this.bias = new Value(random(), [], '', 'bias');
+        this.bias = new Value(random(), [], 'bias');
     }
 
     get_parameters(): Value[] {

@@ -1,4 +1,4 @@
-import { createArray, Neuron, Value } from ".";
+import { createArray, mseLoss, Neuron, Value, valueArray } from ".";
 
 export function assert(condition: unknown, msg?: string): asserts condition {
   if (!condition) {
@@ -73,6 +73,16 @@ const testBackwardNeuron = function test_backward_neuron() {
   console.log(`${testBackwardNeuron.name} passed`);
 }
 
+
+function testMse() {
+    let target = valueArray([0, 1]);
+    let pred = valueArray([1, 1]);
+
+    let mse = mseLoss(target, pred);
+    assert(mse.data == 0.5);
+}
+
 test_basic();
 test_backward();
 testBackwardNeuron();
+testMse();
