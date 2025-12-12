@@ -107,7 +107,7 @@ test_mlp();
 testMse();
 
 
-export function kapathy_small_mlp() {
+export function karpathy_small_mlp() {
     let mlp = new Mlp([3, 4, 4, 1]);
     let xs = [
         valueArray([2.0, 3.0, -1.0]),
@@ -137,4 +137,4 @@ export function kapathy_small_mlp() {
 }
 
 
-kapathy_small_mlp();
+karpathy_small_mlp();

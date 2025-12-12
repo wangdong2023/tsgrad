@@ -25,7 +25,7 @@ export function mseLoss(target: Value[], pred: Value[]): Value {
 }
 
 
-export class Value { // Kapathy implements more, but I'm lazy, this should do
+export class Value { // Karpathy implements more, but I'm lazy, this should do
     public grad: number = 0;
     public _backward: () => void = () => {};
 
