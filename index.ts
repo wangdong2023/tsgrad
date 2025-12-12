@@ -88,6 +88,7 @@ export class Value { // Kapathy implements more, but I'm lazy, this should do
     }
 
     backward() {
+        this.grad = 1;
         let params = topoSort(this, new Set([]));
         params.reverse();
         for (const param of params) {
@@ -180,10 +181,13 @@ export class Mlp {
         }
     }
 
-    forward(input: Value[]): Value[] {
+    forward(input: Value[]): Value[] | Value {
         let out = input;
         for (const layer of this.layers) {
             out = layer.forward(out);
+        }
+        if (out.length == 1) {
+            return out[0];
         }
         return out;
     }

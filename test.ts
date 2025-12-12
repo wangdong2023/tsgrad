@@ -70,31 +70,33 @@ const testBackwardNeuron = function test_backward_neuron() {
   o = nu.forward(x);
 
   assert(o.data - o1 > 0);
-  console.log(`${testBackwardNeuron.name} passed`);
+  console.log(`${testBackwardNeuron.name} passed!`);
 }
 
 function test_mlp() {
   let dims = [3, 5, 1];
   let mlp = new Mlp(dims);
   let input = createArray(3);
-  let o = mlp.forward(input);
-  o[0].grad = 1;
-  o[0].backward();
+  let o = mlp.forward(input) as Value;
+  o.grad = 1;
+  o.backward();
   
   for(const v of mlp.get_parameters()) {
       v.data = v.data + 0.01 * v.grad;
   }
-  let o1 = mlp.forward(input);
-  assert(o1[0].data > o[0].data)
+  let o1 = mlp.forward(input) as Value;
+  assert(o1.data > o.data);
+  console.log(`mlp passed!`);
 }
 
 
 function testMse() {
-    let target = valueArray([0, 1]);
-    let pred = valueArray([1, 1]);
+  let target = valueArray([0, 1]);
+  let pred = valueArray([1, 1]);
 
-    let mse = mseLoss(target, pred);
-    assert(mse.data == 0.5);
+  let mse = mseLoss(target, pred);
+  assert(mse.data == 0.5);
+  console.log(`mse passed!`);
 }
 
 test_basic();
@@ -103,3 +105,36 @@ testBackwardNeuron();
 test_mlp();
 
 testMse();
+
+
+export function kapathy_small_mlp() {
+    let mlp = new Mlp([3, 4, 4, 1]);
+    let xs = [
+        valueArray([2.0, 3.0, -1.0]),
+        valueArray([3.0, -1.0, 0.5]),
+        valueArray([0.5, 1.0, 1.0]),
+        valueArray([1.0, 1.0, -1.0])
+    ];
+
+    let ys = valueArray([1.0, -1.0, -1.0, 1.0]);
+    
+    let losses = []
+
+    for (let i = 0; i < 20; ++i) {
+        let ypred = xs.map(x => mlp.forward(x) as Value);
+        let loss = mseLoss(ys, ypred);
+        losses.push(loss.data);
+
+        loss.backward();
+        mlp.get_parameters().forEach(p => p.data -= p.grad * 0.5); // apply gradient
+        mlp.get_parameters().forEach(p => p.grad = 0); // zero grad
+    }
+
+    
+    let ypred = xs.map(x => mlp.forward(x) as Value);
+    console.log(ypred.map(v => v.data));
+    console.log(losses);
+}
+
+
+kapathy_small_mlp();
